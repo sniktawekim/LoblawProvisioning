@@ -23,7 +23,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.SwingConstants;
 
 // <editor-fold defaultstate="collapsed" desc=" Author Notes ">
 /**
@@ -84,15 +83,15 @@ public class LoblawProvisioning {
 
     ///default choices for tag dropdowns:
     static int tagBanner = 0;
-    static int tagConfig = 0;
-    static int tagConnectionType = 0;
-    static int tagInBuildingLocation = 0;
-    static int tagInteractive = 0;
+    static int configurationSelection = 0;
+    static int connectionTypeSelection = 0;
+    static int inBuildingLocationSelection = 0;
+    static int interactiveSelection = 0;
     static int tagLanguage = 0;
     static int tagLineOfBusiness = 0;
     static int tagLocationType = 0;
-    static int tagManufacturer = 0;
-    static int tagOrientation = 0;
+    static int manufacturerSelection = 0;
+    static int orientationSelection = 0;
 
     //tech infos
     static String tName = "";
@@ -101,13 +100,13 @@ public class LoblawProvisioning {
     static String poNum = "N/A";
 
     //store infos
-    static String sNumPlayers = "";
-    static String sPhone = "";
-    static String sStreet = "";
-    static String sCity = "";
+    static String tagNumPlayers = "";
+    static String tagStorePhone = "";
+    static String tagStoreStreet = "";
+    static String tagStoreCity = "";
     static String sProvince = "";
-    static String sPostal = "";
-    static int storeProvince = 0;
+    static String tagStorePostal = "";
+    static int selectedProvince = 0;
 
     //tag infos
     static String tagStoreID = "";
@@ -125,7 +124,11 @@ public class LoblawProvisioning {
     static int panelHeight = 500;
     static final String loblawTicketTemplateCode = "7501";
 
+    static ArrayList<Computron> players;
     static Computron device;//device to create
+    static Technician tech;
+    static LoblawStore store;
+
     static String currentCanvas = "tech";//state manager
 
     static ArrayList<JComponent> entries;
@@ -145,16 +148,10 @@ public class LoblawProvisioning {
         System.out.println("Initializing Frame");
         frame = new JFrame("Loblaw Provisioning Tool");
         frame.setIconImage(Toolkit.getDefaultToolkit().getImage("your_image.gif"));
-        device = new Computron(bannerTags, configurationTags,
-                connectionTypeTags,
-                inBuildingLocationTags, inBuildingLocationHostnames,
-                interactiveTags,
-                languageTags,
-                lineOfBusinessTags,
-                locationTypeTags,
-                manufacturerTags,
-                orientationTags,
-                provinceTags);
+        players = new ArrayList();
+        //need to populate arrays in store
+        store = new LoblawStore(languageTags, lineOfBusinessTags, locationTypeTags, bannerTags);
+        tech = new Technician();
         buildCanvas();
     }
 
@@ -177,8 +174,6 @@ public class LoblawProvisioning {
             makeTechPanel();
         } else if (key.compareToIgnoreCase("store") == 0) {
             makeStorePanel();
-        } else if (key.compareToIgnoreCase("tags") == 0) {
-            makeTagsPanel();
         } else if (key.compareToIgnoreCase("multitags") == 0) {
             makeMultitagPanel();
         } else if (key.compareToIgnoreCase("host") == 0) {
@@ -293,454 +288,98 @@ public class LoblawProvisioning {
 
     }
 
-    private static void makeTagsPanel() {
-        panelWidth = 500;
-        panelHeight = 400;
-        canvas.setLayout(new GridLayout(14, 1));
-//////////////////////////////////////////////////////////////////////////////
-        //dropdowns:
-        JPanel bannerLine = new JPanel(new GridLayout(1, 2));//Banner tag
-        JLabel bannerlbl = new JLabel("Banner:");
-        JComboBox bannerBox = new JComboBox(bannerOptions);
-        bannerBox.setSelectedIndex(tagBanner);
-        bannerLine.add(bannerlbl);
-        bannerLine.add(bannerBox);
-        entries.add(bannerBox);
+    private static void makeStorePanel() {
+        panelWidth = 830;
+        panelHeight = 200;
+        canvas.setLayout(new BorderLayout());
 
-//////////////////////////////////////////////////////////////////////////////
-        JPanel configLine = new JPanel(new GridLayout(1, 2));//Configuration tag
-        JLabel configlbl = new JLabel("Configuration:");
-        JComboBox configBox = new JComboBox(configurationOptions);
-        configBox.setSelectedIndex(tagConfig);
-        configLine.add(configlbl);
-        configLine.add(configBox);
-        entries.add(configBox);
+        JPanel titlePanel = new JPanel(new GridLayout(1, 1));
+        JLabel titleLine = new JLabel("Store Information", JLabel.CENTER);
+        titlePanel.add(titleLine);
+        canvas.add(titlePanel, BorderLayout.NORTH);
 
-//////////////////////////////////////////////////////////////////////////////
-        JPanel wiredLine = new JPanel(new GridLayout(1, 2));//Connection Type tag
-        JLabel wiredlbl = new JLabel("Connection Type:");
-        JComboBox wiredBox = new JComboBox(connectionTypeOptions);
-        wiredBox.setSelectedIndex(tagConnectionType);
-        wiredLine.add(wiredlbl);
-        wiredLine.add(wiredBox);
-        entries.add(wiredBox);
+        JPanel storeInfoLeft = new JPanel(new GridLayout(6, 2)); //left side of store info page        
+        //building left lines:
+        JPanel idLine = getTextBoxPanel("Store ID #:", tagStoreID);                              //entry 0
+        JPanel storePhoneLine = getTextBoxPanel("Phone #:", tagStorePhone);                     //entry 1
+        JPanel storeStreetLine = getTextBoxPanel("Street Address:", tagStoreStreet);            //entry 2
+        JPanel storeCityLine = getTextBoxPanel("City:", tagStoreCity);                          //entry 3
+        JPanel storeProvinceLine = getComboBoxPanel("Province:", provinceOptions, selectedProvince); //entry 4
+        JPanel storePostalLine = getTextBoxPanel("Postal Code:", tagStorePostal);               //entry 5
+        //adding lines to left side:
+        storeInfoLeft.add(idLine);
+        storeInfoLeft.add(storePhoneLine);
+        storeInfoLeft.add(storeStreetLine);
+        storeInfoLeft.add(storeCityLine);
+        storeInfoLeft.add(storeProvinceLine);
+        storeInfoLeft.add(storePostalLine);
+        //adding left side to canvas:
+        canvas.add(storeInfoLeft, BorderLayout.WEST);
 
-//////////////////////////////////////////////////////////////////////////////       
-        JPanel locationLine = new JPanel(new GridLayout(1, 2));//In-Building Location tag
-        JLabel locationlbl = new JLabel("In-Building Location:");
-        JComboBox locationBox = new JComboBox(inBuildingLocationOptions);
-        locationBox.setSelectedIndex(tagInBuildingLocation);
-        locationLine.add(locationlbl);
-        locationLine.add(locationBox);
-        entries.add(locationBox);
+        JPanel storeInfoRight = new JPanel(new GridLayout(5, 2));
+        //building right lines:
+        JPanel numPlayersLine = getTextBoxPanel("Number of Players:", tagNumPlayers);                       //entry 6
+        JPanel locTypeLine = getComboBoxPanel("Location Type:", locationTypeOptions, tagLocationType);   //entry 7
+        JPanel lOBLine = getComboBoxPanel("Line of Business:", lineOfBusinessOptions, tagLineOfBusiness);//entry 8
+        JPanel languageLine = getComboBoxPanel("Language:", languageOptions, tagLanguage);               //entry 9
+        JPanel BannerLine = getComboBoxPanel("Banner:", bannerOptions, tagBanner);                       //entry 10
+        //adding lines to right side:
+        storeInfoRight.add(numPlayersLine);
+        storeInfoRight.add(locTypeLine);
+        storeInfoRight.add(lOBLine);
+        storeInfoRight.add(languageLine);
+        storeInfoRight.add(BannerLine);
+        //adding right side to canvas:
+        canvas.add(storeInfoRight, BorderLayout.EAST);
 
-//////////////////////////////////////////////////////////////////////////////       
-        JPanel interactiveLine = new JPanel(new GridLayout(1, 2));//Interactive tag
-        JLabel interactivelbl = new JLabel("Interactive:");
-        JComboBox interactiveBox = new JComboBox(interactiveOptions);
-        interactiveBox.setSelectedIndex(tagInteractive);
-        interactiveLine.add(interactivelbl);
-        interactiveLine.add(interactiveBox);
-        entries.add(interactiveBox);
-
-//////////////////////////////////////////////////////////////////////////////       
-        JPanel languageLine = new JPanel(new GridLayout(1, 2));//Language tag
-        JLabel languagelbl = new JLabel("Language:");
-        JComboBox languageBox = new JComboBox(languageOptions);
-        languageBox.setSelectedIndex(tagLanguage);
-        languageLine.add(languagelbl);
-        languageLine.add(languageBox);
-        entries.add(languageBox);
-
-//////////////////////////////////////////////////////////////////////////////       
-        //Strings:
-        JPanel businessLine = new JPanel(new GridLayout(1, 2));//Line of Business tag
-        JLabel businesslbl = new JLabel("Line of Business");
-        JComboBox businessBox = new JComboBox(lineOfBusinessOptions);
-        businessBox.setSelectedIndex(tagLineOfBusiness);
-        businessLine.add(businesslbl);
-        businessLine.add(businessBox);
-        entries.add(businessBox);
-
-//////////////////////////////////////////////////////////////////////////////        
-        JPanel idLine = new JPanel(new GridLayout(1, 2));//Location ID tag
-        JLabel idlbl = new JLabel("Store ID #:");
-        JTextField idBox = new JTextField(tagStoreID);
-        idLine.add(idlbl);
-        idLine.add(idBox);
-        entries.add(idBox);
-
-//////////////////////////////////////////////////////////////////////////////       
-        //dropdowns:
-        JPanel locTypeLine = new JPanel(new GridLayout(1, 2));//Location Type tag
-        JLabel locTypelbl = new JLabel("Location Type:");
-        JComboBox locTypeBox = new JComboBox(locationTypeOptions);
-        locTypeBox.setSelectedIndex(tagLocationType);
-        locTypeLine.add(locTypelbl);
-        locTypeLine.add(locTypeBox);
-        entries.add(locTypeBox);
-
-//////////////////////////////////////////////////////////////////////////////
-        JPanel manufacturerLine = new JPanel(new GridLayout(1, 2));//MP Manufacturer tag
-        JLabel manufacturerlbl = new JLabel("MP Manufacturer:");
-        JComboBox manufacturerBox = new JComboBox(manufacturerOptions);
-        manufacturerBox.setSelectedIndex(tagManufacturer);
-        manufacturerLine.add(manufacturerlbl);
-        manufacturerLine.add(manufacturerBox);
-        entries.add(manufacturerBox);
-
-//////////////////////////////////////////////////////////////////////////////  
-        //String
-        JPanel modelLine = new JPanel(new GridLayout(1, 2));//MP Model tag
-        JLabel modellbl = new JLabel("MP Model:");
-        JTextField modelBox = new JTextField(tagMPModel);
-        modelLine.add(modellbl);
-        modelLine.add(modelBox);
-        entries.add(modelBox);
-
-//////////////////////////////////////////////////////////////////////////////
-        //dropdown
-        JPanel orientationLine = new JPanel(new GridLayout(1, 2));//Orientation tag
-        JLabel orientationlbl = new JLabel("Orientation:");
-        JComboBox orientationBox = new JComboBox(orientationOptions);
-        orientationBox.setSelectedIndex(tagOrientation);
-        orientationLine.add(orientationlbl);
-        orientationLine.add(orientationBox);
-        entries.add(orientationBox);
-
-////////////////////////////////////////////////////////////////////////////// 
-        //String
-        JPanel ipLine = new JPanel(new GridLayout(1, 2));//MP Model tag
-        JLabel iplbl = new JLabel("IP address:");
-        JTextField ipBox = new JTextField(tagIPAddress);
-        ipLine.add(iplbl);
-        ipLine.add(ipBox);
-        entries.add(ipBox);
-
-//////////////////////////////////////////////////////////////////////////////
-        //adding button line
-        JPanel buttonLine = new JPanel(new GridLayout(1, 2));
-        JButton clearButton = new JButton("Reset");
-
-        clearButton.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent ae) {
-                resetButtonPressed();
-            }
-
-        });
-
-        JButton continueButton = new JButton("Continue");
-        continueButton.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent ae) {
-                continueButtonPressed();
-            }
-
-        });
-        buttonLine.add(clearButton);
-        buttonLine.add(continueButton);
-
-        //adding lines to canvas
-        canvas.add(bannerLine);
-        canvas.add(configLine);
-        canvas.add(wiredLine);
-        canvas.add(locationLine);
-        canvas.add(interactiveLine);
-        canvas.add(languageLine);
-        canvas.add(businessLine);
-        canvas.add(idLine);
-        canvas.add(locTypeLine);
-        canvas.add(manufacturerLine);
-        canvas.add(modelLine);
-        canvas.add(orientationLine);
-        canvas.add(ipLine);
-
-        canvas.add(buttonLine);
+        canvas.add(getButtonBar(), BorderLayout.SOUTH);
 
     }
 
     private static void makeMultitagPanel() {
         panelWidth = 500;
-        panelHeight = 535;
-        int deviceNum = Integer.parseInt(sNumPlayers);
-        JPanel devicesPane = new JPanel(new GridLayout((14 * deviceNum) + 1, 1));
+        panelHeight = 600;
+        int numPlayers = Integer.parseInt(tagNumPlayers);
+        JPanel tagsPanel = new JPanel(new BorderLayout());
+        JLabel panelTitle = new JLabel("Player Tags", JLabel.CENTER);
 
-        // <editor-fold defaultstate="collapsed" desc=" Device panels loop ">
-        for (int i = 0; i < deviceNum; i++) {
+        JPanel devicesSection = new JPanel(new GridLayout(1, numPlayers));
+
+        for (int i = 0; i < numPlayers; i++) {
+            JPanel devicePanel = new JPanel(new GridLayout(9, 1));
+
             JLabel playerNo = new JLabel("Player: " + (i + 1));
-//////////////////////////////////////////////////////////////////////////////
-            //dropdowns:
-            JPanel bannerLine = new JPanel(new GridLayout(1, 2));//Banner tag
-            JLabel bannerlbl = new JLabel("Banner:");
-            JComboBox bannerBox = new JComboBox(bannerOptions);
-            bannerBox.setSelectedIndex(tagBanner);
-            bannerLine.add(bannerlbl);
-            bannerLine.add(bannerBox);
-            entries.add(bannerBox);
+//////////////////////////////////////////////////////////////////////////////         Building tag lines
+            JPanel configLine = getComboBoxPanel("Configuration:", configurationOptions, configurationSelection);                            //entry 0
+            JPanel wiredLine = getComboBoxPanel("Connection Type:", connectionTypeOptions, connectionTypeSelection);                  //entry 1
+            JPanel locationLine = getComboBoxPanel("In-Building Location:", inBuildingLocationOptions, inBuildingLocationSelection);  //entry 2
+            JPanel interactiveLine = getComboBoxPanel("Interactive:", interactiveOptions, interactiveSelection);                      //entry 3
+            JPanel manufacturerLine = getComboBoxPanel("MP Manufacturer:", manufacturerOptions, manufacturerSelection);                //entry 4
+            JPanel modelLine = getTextBoxPanel("MP Model:", tagMPModel);                                                        //entry 5
+            JPanel orientationLine = getComboBoxPanel("Orientation:", orientationOptions, orientationSelection);                       //entry 6
+            JPanel ipLine = getTextBoxPanel("IP Address:", tagIPAddress);                                                       //entry 7
+////////////////////////////////////////////////////////////////////////////        Done building tag lines
 
-//////////////////////////////////////////////////////////////////////////////
-            JPanel configLine = new JPanel(new GridLayout(1, 2));//Configuration tag
-            JLabel configlbl = new JLabel("Configuration:");
-            JComboBox configBox = new JComboBox(configurationOptions);
-            configBox.setSelectedIndex(tagConfig);
-            configLine.add(configlbl);
-            configLine.add(configBox);
-            entries.add(configBox);
-
-//////////////////////////////////////////////////////////////////////////////
-            JPanel wiredLine = new JPanel(new GridLayout(1, 2));//Connection Type tag
-            JLabel wiredlbl = new JLabel("Connection Type:");
-            JComboBox wiredBox = new JComboBox(connectionTypeOptions);
-            wiredBox.setSelectedIndex(tagConnectionType);
-            wiredLine.add(wiredlbl);
-            wiredLine.add(wiredBox);
-            entries.add(wiredBox);
-
-//////////////////////////////////////////////////////////////////////////////       
-            JPanel locationLine = new JPanel(new GridLayout(1, 2));//In-Building Location tag
-            JLabel locationlbl = new JLabel("In-Building Location:");
-            JComboBox locationBox = new JComboBox(inBuildingLocationOptions);
-            locationBox.setSelectedIndex(tagInBuildingLocation);
-            locationLine.add(locationlbl);
-            locationLine.add(locationBox);
-            entries.add(locationBox);
-
-//////////////////////////////////////////////////////////////////////////////       
-            JPanel interactiveLine = new JPanel(new GridLayout(1, 2));//Interactive tag
-            JLabel interactivelbl = new JLabel("Interactive:");
-            JComboBox interactiveBox = new JComboBox(interactiveOptions);
-            interactiveBox.setSelectedIndex(tagInteractive);
-            interactiveLine.add(interactivelbl);
-            interactiveLine.add(interactiveBox);
-            entries.add(interactiveBox);
-
-//////////////////////////////////////////////////////////////////////////////       
-            JPanel languageLine = new JPanel(new GridLayout(1, 2));//Language tag
-            JLabel languagelbl = new JLabel("Language:");
-            JComboBox languageBox = new JComboBox(languageOptions);
-            languageBox.setSelectedIndex(tagLanguage);
-            languageLine.add(languagelbl);
-            languageLine.add(languageBox);
-            entries.add(languageBox);
-
-//////////////////////////////////////////////////////////////////////////////       
-            //Strings:
-            JPanel businessLine = new JPanel(new GridLayout(1, 2));//Line of Business tag
-            JLabel businesslbl = new JLabel("Line of Business");
-            JComboBox businessBox = new JComboBox(lineOfBusinessOptions);
-            businessBox.setSelectedIndex(tagLineOfBusiness);
-            businessLine.add(businesslbl);
-            businessLine.add(businessBox);
-            entries.add(businessBox);
-
-//////////////////////////////////////////////////////////////////////////////        
-            JPanel idLine = new JPanel(new GridLayout(1, 2));//Location ID tag
-            JLabel idlbl = new JLabel("Store ID #:");
-            JTextField idBox = new JTextField(tagStoreID);
-            idLine.add(idlbl);
-            idLine.add(idBox);
-            entries.add(idBox);
-
-//////////////////////////////////////////////////////////////////////////////       
-            //dropdowns:
-            JPanel locTypeLine = new JPanel(new GridLayout(1, 2));//Location Type tag
-            JLabel locTypelbl = new JLabel("Location Type:");
-            JComboBox locTypeBox = new JComboBox(locationTypeOptions);
-            locTypeBox.setSelectedIndex(tagLocationType);
-            locTypeLine.add(locTypelbl);
-            locTypeLine.add(locTypeBox);
-            entries.add(locTypeBox);
-
-//////////////////////////////////////////////////////////////////////////////
-            JPanel manufacturerLine = new JPanel(new GridLayout(1, 2));//MP Manufacturer tag
-            JLabel manufacturerlbl = new JLabel("MP Manufacturer:");
-            JComboBox manufacturerBox = new JComboBox(manufacturerOptions);
-            manufacturerBox.setSelectedIndex(tagManufacturer);
-            manufacturerLine.add(manufacturerlbl);
-            manufacturerLine.add(manufacturerBox);
-            entries.add(manufacturerBox);
-
-//////////////////////////////////////////////////////////////////////////////  
-            //String
-            JPanel modelLine = new JPanel(new GridLayout(1, 2));//MP Model tag
-            JLabel modellbl = new JLabel("MP Model:");
-            JTextField modelBox = new JTextField(tagMPModel);
-            modelLine.add(modellbl);
-            modelLine.add(modelBox);
-            entries.add(modelBox);
-
-//////////////////////////////////////////////////////////////////////////////
-            //dropdown
-            JPanel orientationLine = new JPanel(new GridLayout(1, 2));//Orientation tag
-            JLabel orientationlbl = new JLabel("Orientation:");
-            JComboBox orientationBox = new JComboBox(orientationOptions);
-            orientationBox.setSelectedIndex(tagOrientation);
-            orientationLine.add(orientationlbl);
-            orientationLine.add(orientationBox);
-            entries.add(orientationBox);
-
-////////////////////////////////////////////////////////////////////////////// 
-            //String
-            JPanel ipLine = new JPanel(new GridLayout(1, 2));//MP Model tag
-            JLabel iplbl = new JLabel("IP address:");
-            JTextField ipBox = new JTextField(tagIPAddress);
-            ipLine.add(iplbl);
-            ipLine.add(ipBox);
-            entries.add(ipBox);
-
-            //adding lines to canvas
-            devicesPane.add(playerNo);
-            devicesPane.add(bannerLine);
-            devicesPane.add(configLine);
-            devicesPane.add(wiredLine);
-            devicesPane.add(locationLine);
-            devicesPane.add(interactiveLine);
-            devicesPane.add(languageLine);
-            devicesPane.add(businessLine);
-            devicesPane.add(idLine);
-            devicesPane.add(locTypeLine);
-            devicesPane.add(manufacturerLine);
-            devicesPane.add(modelLine);
-            devicesPane.add(orientationLine);
-            devicesPane.add(ipLine);
+//adding lines to canvas
+            devicePanel.add(playerNo);
+            devicePanel.add(configLine);
+            devicePanel.add(wiredLine);
+            devicePanel.add(locationLine);
+            devicePanel.add(interactiveLine);
+            devicePanel.add(manufacturerLine);
+            devicePanel.add(modelLine);
+            devicePanel.add(orientationLine);
+            devicePanel.add(ipLine);
+            devicesSection.add(devicePanel);
         }
 
-// </editor-fold>
-        //////////////////////////////////////////////////////////////////////////////
-        //adding button line
-        JPanel buttonLine = new JPanel(new GridLayout(1, 2));
-        JButton clearButton = new JButton("Reset");
-
-        clearButton.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent ae) {
-                resetButtonPressed();
-            }
-
-        });
-
-        JButton continueButton = new JButton("Continue");
-        continueButton.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent ae) {
-                continueButtonPressed();
-            }
-
-        });
-        buttonLine.add(clearButton);
-        buttonLine.add(continueButton);
-
-        devicesPane.add(buttonLine);
-
-        JScrollPane multiTagPanel = new JScrollPane(devicesPane, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        JScrollPane multiTagPanel = new JScrollPane(devicesSection, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         multiTagPanel.setPreferredSize(new Dimension(500, 500));
-        canvas.add(multiTagPanel);
+        tagsPanel.add(panelTitle, BorderLayout.NORTH);
+        tagsPanel.add(multiTagPanel, BorderLayout.CENTER);
+        tagsPanel.add(getButtonBar(), BorderLayout.SOUTH);//adding button bar
+        canvas.add(tagsPanel);
 
-    }
-
-    private static void makeStorePanel() {
-        panelWidth = 500;
-        panelHeight = 360;
-        canvas.setLayout(new GridLayout(8, 1));
-        JPanel titleLine = new JPanel(new GridLayout(1, 1));
-        JPanel numPlayersLine = new JPanel(new GridLayout(1, 1));
-        JPanel storePhoneLine = new JPanel(new GridLayout(1, 2));
-        JPanel storeStreetLine = new JPanel(new GridLayout(1, 2));
-        JPanel storeCityLine = new JPanel(new GridLayout(1, 2));
-        JPanel storeProvinceLine = new JPanel(new GridLayout(1, 2));
-        JPanel storePostalLine = new JPanel(new GridLayout(1, 2));
-        JPanel buttonLine = new JPanel(new GridLayout(1, 2));
-
-        JLabel storelbl = new JLabel("Store Information", SwingConstants.CENTER);
-
-        JLabel numPlayerslbl = new JLabel("Number of Players:");
-        JLabel phonelbl = new JLabel("Phone #:");
-        JLabel streetlbl = new JLabel("Street Address:");
-        JLabel citylbl = new JLabel("City:");
-        JLabel provincelbl = new JLabel("State/Province:");
-        JLabel postallbl = new JLabel("Postal Code:");
-
-        JTextField numPlayersBox = new JTextField(sNumPlayers);
-        numPlayersBox.setColumns(1);
-        entries.add(numPlayersBox);
-
-        JTextField phoneBox = new JTextField(sPhone);
-        phoneBox.setColumns(10);
-        entries.add(phoneBox);
-
-        JTextField addressBox = new JTextField(sStreet);
-        addressBox.setColumns(10);
-        entries.add(addressBox);
-
-        JTextField cityBox = new JTextField(sCity);
-        entries.add(cityBox);
-
-/////////////////
-        JComboBox provinceBox = new JComboBox(provinceOptions);
-        provinceBox.setSelectedIndex(storeProvince);
-        entries.add(provinceBox);
-/////////////////
-
-        JTextField postalBox = new JTextField(sPostal);
-        entries.add(postalBox);
-
-        JButton clearButton = new JButton("Reset");
-
-        clearButton.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent ae) {
-                resetButtonPressed();
-            }
-
-        });
-
-        JButton continueButton = new JButton("Continue");
-        continueButton.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent ae) {
-                continueButtonPressed();
-            }
-
-        });
-
-        titleLine.add(storelbl);
-
-        numPlayersLine.add(numPlayerslbl);
-        numPlayersLine.add(numPlayersBox);
-
-        storePhoneLine.add(phonelbl);
-        storePhoneLine.add(phoneBox);
-
-        storeStreetLine.add(streetlbl);
-        storeStreetLine.add(addressBox);
-
-        storeCityLine.add(citylbl);
-        storeCityLine.add(cityBox);
-
-        storeProvinceLine.add(provincelbl);
-        storeProvinceLine.add(provinceBox);
-
-        storePostalLine.add(postallbl);
-        storePostalLine.add(postalBox);
-
-        buttonLine.add(clearButton);
-        buttonLine.add(continueButton);
-
-        canvas.add(titleLine);
-        canvas.add(numPlayersLine);
-        canvas.add(storePhoneLine);
-        canvas.add(storeStreetLine);
-        canvas.add(storeCityLine);
-        canvas.add(storeProvinceLine);
-        canvas.add(storePostalLine);
-        canvas.add(buttonLine);
     }
 
     private static void makeHostnamePanel() {
@@ -1037,7 +676,7 @@ public class LoblawProvisioning {
             return;
         }
 
-        errors = device.setTechInfo(tName, tPhone, tCompany, poNum);
+        errors = tech.setInfo(tName, tPhone, tCompany, poNum);
         if (errors.size() > 0) {
             displayErrors(errors);
             return;
@@ -1053,32 +692,34 @@ public class LoblawProvisioning {
             displayErrors(errors);
             badChars = true;
         }
-
-        //setting these values so that when the form rebuilds, it remembers
-        //the entries
-        sNumPlayers = ((JTextField) entries.get(0)).getText();
-        sPhone = ((JTextField) entries.get(1)).getText();
-        sStreet = ((JTextField) entries.get(2)).getText();
-        sCity = ((JTextField) entries.get(3)).getText();
+        tagStoreID = ((JTextField) entries.get(0)).getText();
+        tagStorePhone = ((JTextField) entries.get(1)).getText();
+        tagStoreStreet = ((JTextField) entries.get(2)).getText();
+        tagStoreCity = ((JTextField) entries.get(3)).getText();
         sProvince = provinceTags[((JComboBox) entries.get(4)).getSelectedIndex()];
-        storeProvince = ((JComboBox) entries.get(4)).getSelectedIndex();
-        sPostal = ((JTextField) entries.get(5)).getText();
+        selectedProvince = ((JComboBox) entries.get(4)).getSelectedIndex();
+        tagStorePostal = ((JTextField) entries.get(5)).getText();
+        tagNumPlayers = ((JTextField) entries.get(6)).getText();
+        String sLocationType = locationTypeOptions[((JComboBox) entries.get(7)).getSelectedIndex()];
+        tagLocationType = ((JComboBox) entries.get(7)).getSelectedIndex();
+        String lineOfBusiness = lineOfBusinessOptions[((JComboBox) entries.get(8)).getSelectedIndex()];
+        tagLineOfBusiness = ((JComboBox) entries.get(8)).getSelectedIndex();
+        String language = languageOptions[((JComboBox) entries.get(9)).getSelectedIndex()];
+        tagLanguage = ((JComboBox) entries.get(9)).getSelectedIndex();
+        String banner = bannerOptions[((JComboBox) entries.get(10)).getSelectedIndex()];
+        tagBanner = ((JComboBox) entries.get(10)).getSelectedIndex();
 
         if (badChars) {//need to check if it failed basic input check
             return;//if so, break out to rebuild form.
         }
         //if the generic test passed, we are ready to push the info
         //to the specific input tests
-        errors = device.setStoreInfo(sNumPlayers, sPhone, sStreet, sCity, sProvince, sPostal);
+        errors = store.setInfo(tagStoreID, tagStorePhone, tagStoreStreet, tagStoreCity, sProvince, tagStorePostal, tagNumPlayers, tagLocationType, tagLineOfBusiness, tagLanguage, tagBanner);
         if (errors.size() > 0) {//if it failed a specific input check
             displayErrors(errors);
             return;
         }
-        if (Integer.parseInt(sNumPlayers) > 1) {
-            currentCanvas = "multitags";
-        } else {
-            currentCanvas = "tags";
-        }
+        currentCanvas = "multitags";
     }
 
     private static void handleTagsContinue() {
@@ -1095,16 +736,16 @@ public class LoblawProvisioning {
         tagBanner = ((JComboBox) entries.get(0)).getSelectedIndex();
         ///////////////////////////////////////////////////////////configuration
         String configuration = configurationOptions[((JComboBox) entries.get(1)).getSelectedIndex()];
-        tagConfig = ((JComboBox) entries.get(1)).getSelectedIndex();
+        configurationSelection = ((JComboBox) entries.get(1)).getSelectedIndex();
         /////////////////////////////////////////////////////////connection type
         String connectionType = connectionTypeOptions[((JComboBox) entries.get(2)).getSelectedIndex()];
-        tagConnectionType = ((JComboBox) entries.get(2)).getSelectedIndex();
+        connectionTypeSelection = ((JComboBox) entries.get(2)).getSelectedIndex();
         ///////////////////////////////////////////////////in building location
         String inBuildingLocation = inBuildingLocationTags[((JComboBox) entries.get(3)).getSelectedIndex()];
-        tagInBuildingLocation = ((JComboBox) entries.get(3)).getSelectedIndex();
+        inBuildingLocationSelection = ((JComboBox) entries.get(3)).getSelectedIndex();
         /////////////////////////////////////////////////////////////interactive
         String interactive = interactiveOptions[((JComboBox) entries.get(4)).getSelectedIndex()];
-        tagInteractive = ((JComboBox) entries.get(4)).getSelectedIndex();
+        interactiveSelection = ((JComboBox) entries.get(4)).getSelectedIndex();
         ////////////////////////////////////////////////////////////////language
         String language = languageOptions[((JComboBox) entries.get(5)).getSelectedIndex()];
         tagLanguage = ((JComboBox) entries.get(5)).getSelectedIndex();
@@ -1118,12 +759,12 @@ public class LoblawProvisioning {
         tagLocationType = ((JComboBox) entries.get(8)).getSelectedIndex();
         ////////////////////////////////////////////////////////////manufacturer
         String manufacturer = manufacturerOptions[((JComboBox) entries.get(9)).getSelectedIndex()];
-        tagManufacturer = ((JComboBox) entries.get(9)).getSelectedIndex();
+        manufacturerSelection = ((JComboBox) entries.get(9)).getSelectedIndex();
         //////////////////////////////////////////////////////manufacturer model
         tagMPModel = ((JTextField) entries.get(10)).getText();
         /////////////////////////////////////////////////////////////orientation
         String orientation = orientationOptions[((JComboBox) entries.get(11)).getSelectedIndex()];
-        tagOrientation = ((JComboBox) entries.get(11)).getSelectedIndex();
+        orientationSelection = ((JComboBox) entries.get(11)).getSelectedIndex();
         //////////////////////////////////////////////////////////////ip address
         tagIPAddress = ((JTextField) entries.get(12)).getText();
 
@@ -1136,9 +777,9 @@ public class LoblawProvisioning {
         //of Strings which contain the detailed error message
         int offset = -1;//we added a null value to the beginning of the arraylists after importing them.
         //so we need to correct that when passing it through or else it will get out of bounds.
-        errors = device.setTags(tagBanner + offset, tagConfig + offset, tagConnectionType + offset,
-                tagInBuildingLocation + offset, tagInteractive + offset, tagLanguage + offset, tagLineOfBusiness + offset, tagStoreID,
-                tagLocationType + offset, tagManufacturer + offset, tagMPModel, tagOrientation + offset, tagIPAddress);
+        //errors = device.setTags(tagBanner + offset, tagConfig + offset, tagConnectionType + offset,
+        //       tagInBuildingLocation + offset, tagInteractive + offset, tagLanguage + offset, tagLineOfBusiness + offset, tagStoreID,
+        //       tagLocationType + offset, tagManufacturer + offset, tagMPModel, tagOrientation + offset, tagIPAddress);
 
         if (errors.size() > 0) {//if the array list isnt empty, there's a problem
             displayErrors(errors);//this method prints them all on a new window
@@ -1147,10 +788,87 @@ public class LoblawProvisioning {
         //if we got here, we did not have any errors, so this was a success
         currentCanvas = "host";
     }
-    
-    private static void handleMultiTagContinue(){
-        System.out.println(sNumPlayers + " Players: handleMultiTagContinue");
-        System.exit(0);
+
+    private static void handleMultiTagContinue() {
+        ArrayList<String> errors = checkInvalidChars();//checks all entries for banned characters
+        ArrayList<String> playerErrors = new ArrayList();//checks MP input for errors
+        ArrayList<Computron> tempPlayers = new ArrayList();
+        boolean badChars = false;//flag for if there was bad input
+
+        if (errors.size() > 0) {//if there was at least 1 error
+            displayErrors(errors); //print the error
+            badChars = true;//set flag so that later we know to break out
+        }
+        int numberOfPlayers = Integer.parseInt(tagNumPlayers);
+
+        //for each device:
+        for (int currentPlayerNumber = 0; currentPlayerNumber < numberOfPlayers; currentPlayerNumber++) {
+            //lets grab their inputs and store them in some variables:
+            String configuration = configurationOptions[((JComboBox) entries.get(0)).getSelectedIndex()];
+            configurationSelection = ((JComboBox) entries.get(0)).getSelectedIndex();
+
+            String connectionType = connectionTypeOptions[((JComboBox) entries.get(1)).getSelectedIndex()];
+            connectionTypeSelection = ((JComboBox) entries.get(1)).getSelectedIndex();
+
+            String inBuildingLocation = inBuildingLocationTags[((JComboBox) entries.get(2)).getSelectedIndex()];
+            inBuildingLocationSelection = ((JComboBox) entries.get(2)).getSelectedIndex();
+
+            String interactive = interactiveOptions[((JComboBox) entries.get(3)).getSelectedIndex()];
+            interactiveSelection = ((JComboBox) entries.get(3)).getSelectedIndex();
+
+            String manufacturer = manufacturerOptions[((JComboBox) entries.get(4)).getSelectedIndex()];
+            manufacturerSelection = ((JComboBox) entries.get(4)).getSelectedIndex();
+
+            tagMPModel = ((JTextField) entries.get(5)).getText();
+
+            String orientation = orientationOptions[((JComboBox) entries.get(6)).getSelectedIndex()];
+            orientationSelection = ((JComboBox) entries.get(6)).getSelectedIndex();
+
+            tagIPAddress = ((JTextField) entries.get(7)).getText();
+            //done pulling inputs 
+            //now that we've stored their choices - if there was an invalid input, we can rebuild
+
+            if (badChars) {// if an error had been detected 
+                return;//break to rebuild the form with inputted values
+            }
+            //attempting to create player, will receive arraylist of 
+            //of Strings which contain all applicable error messages:
+            int offset = -1;//we added a null value to the beginning of the arraylists after importing them.
+            //this offset corrects for that.
+
+            Computron newDevice = new Computron(store, tech, configurationTags,
+                    connectionTypeTags, inBuildingLocationTags, inBuildingLocationHostnames,
+                    interactiveTags, manufacturerTags, orientationTags, provinceTags);
+            errors = newDevice.setTags(configurationSelection, connectionTypeSelection,
+                    inBuildingLocationSelection, interactiveSelection,
+                    manufacturerSelection, tagMPModel, orientationSelection, tagIPAddress);
+
+            for (int e = 0; e < errors.size(); e++) {
+                playerErrors.add(errors.get(e));
+            }
+            tempPlayers.add(newDevice);
+        }///end device creation loop
+        boolean brake = false;
+        if (errors.size() > 0) {//if the array list isnt empty, there's a problem
+            displayErrors(errors);//this method prints them all on a new window
+            brake = true;
+        }
+        if (playerErrors.size() > 0) {
+            displayErrors(playerErrors);
+            brake = true;
+        }
+        if (brake) {
+            return;
+        }
+        //if we got here, we did not have any errors, so this was a success
+        //lets now add the devices to our players array
+
+        for (int i = 0; i < tempPlayers.size(); i++) {
+            players.add(tempPlayers.get(i));
+        }
+        currentCanvas = "host";
+        System.out.println("should go to host panel now.");
+
     }
 
     private static void handleHostContinue() {
@@ -1211,16 +929,16 @@ public class LoblawProvisioning {
                 loblawTicketTemplateCode,//template ID for ticket system
                 "Loblaw",//name of customer
                 getTicketDump(),//ticket description text string
-                device.getStoreNumber(),//store number
-                "Loblaw New Site Provisioning - SiteID: " + device.getBanner() + " " + device.getStoreNumber() + " " + device.getLineOfBusiness()//ticket subject line
+                device.getStore().getStoreNumber(),//store number
+                "Loblaw New Site Provisioning - SiteID: " + device.getStore().getBanner() + " " + device.getStore().getStoreNumber() + " " + device.getStore().getLineOfBusiness()//ticket subject line
         );
 
     }
 
     private static String getTicketDumpOld() {
         String techInfo;
-        techInfo = device.getTechInfo();
-        String storeInfo = device.getStoreInfo();
+        techInfo = device.getTech().getTechInfo();
+        String storeInfo = device.getStore().getStoreInfo();
         String tagInfo = device.getTagInfo();
 
         return techInfo + "\n\n\n" + storeInfo + "\n\n\n" + tagInfo;
@@ -1256,15 +974,15 @@ public class LoblawProvisioning {
 
     private static void resetButtonPressed() {
         tagBanner = 0;
-        tagConfig = 0;
-        tagConnectionType = 0;
-        tagInBuildingLocation = 0;
-        tagInteractive = 0;
+        configurationSelection = 0;
+        connectionTypeSelection = 0;
+        inBuildingLocationSelection = 0;
+        interactiveSelection = 0;
         tagLanguage = 0;
         tagLineOfBusiness = 0;
         tagLocationType = 0;
-        tagManufacturer = 0;
-        tagOrientation = 0;
+        manufacturerSelection = 0;
+        orientationSelection = 0;
 
         //tech infos
         tName = "";
@@ -1273,12 +991,12 @@ public class LoblawProvisioning {
         poNum = "N/A";
 
         //store infos
-        sPhone = "";
-        sStreet = "";
-        sCity = "";
+        tagStorePhone = "";
+        tagStoreStreet = "";
+        tagStoreCity = "";
         sProvince = "";
-        sPostal = "";
-        storeProvince = 0;
+        tagStorePostal = "";
+        selectedProvince = 0;
         clearStateFields();
     }
 
@@ -1295,10 +1013,10 @@ public class LoblawProvisioning {
             System.out.println("TAGS info finished");
             handleTagsContinue();
 
-            } else if (currentCanvas.compareToIgnoreCase("multitags") == 0) {
+        } else if (currentCanvas.compareToIgnoreCase("multitags") == 0) {
             System.out.println("MULTITAGS info finished");
             handleMultiTagContinue();
-            
+
         } else if (currentCanvas.compareToIgnoreCase("host") == 0) {
             System.out.println("HOST info finished");
             handleHostContinue();
@@ -1696,7 +1414,6 @@ public class LoblawProvisioning {
     }
 
 // </editor-fold>
-    
     private static void checkForUpdates() {
 
     }
@@ -1737,4 +1454,46 @@ public class LoblawProvisioning {
         return errors;
     }
 
+    private static JPanel getComboBoxPanel(String label, String[] options, int selection) {
+        JPanel line = new JPanel(new GridLayout(1, 2));//Banner tag
+        JLabel labelText = new JLabel(label);
+        JComboBox box = new JComboBox(options);
+        box.setSelectedIndex(selection);
+        line.add(labelText);
+        line.add(box);
+        entries.add(box);
+        return line;
+    }
+
+    private static JPanel getTextBoxPanel(String label, String entry) {
+        JPanel line = new JPanel(new GridLayout(1, 2));
+        JLabel labeText = new JLabel(label);
+        JTextField entryBox = new JTextField(entry);
+        line.add(labeText);
+        line.add(entryBox);
+        entries.add(entryBox);
+        return line;
+    }
+
+    private static JPanel getButtonBar() {
+        JButton clearButton = new JButton("Reset");
+        clearButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                resetButtonPressed();
+            }
+        });
+        JButton continueButton = new JButton("Continue");
+        continueButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                continueButtonPressed();
+            }
+        });
+
+        JPanel buttonLine = new JPanel(new GridLayout(1, 2));
+        buttonLine.add(clearButton);
+        buttonLine.add(continueButton);
+        return buttonLine;
+    }
 }
